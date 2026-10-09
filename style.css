@@ -1,0 +1,165 @@
+/* Shared layout. The font family and optical sizes come from
+   static/fonts/<variant>.css, which each page loads AFTER this file so its
+   values win. Regenerate the pages with: python3 build.py */
+
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --text: #1a1a1d;
+  --text-secondary: #3b3c41;   /* body prose: contrast 10.4 on white */
+  --accent: #2b6a94;   /* talk notes, hovers: contrast 6.0 */
+  --link: #0f4a6e;     /* Prussian blue, deepened: contrast 9.6 */
+  /* Fallbacks only; the variant stylesheet overrides all four. */
+  --body-font: Georgia, 'Times New Roman', serif;
+  --body-size: 18px;
+  --name-size: 33px;
+  --line: 1.42;
+  --text-stroke: 0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--body-font);
+  font-size: var(--body-size);
+  line-height: var(--line);
+  color: var(--text);
+  background-color: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  /* Zero for most faces; CMU Concrete uses a fraction of a pixel. */
+  -webkit-text-stroke: var(--text-stroke) currentColor;
+}
+
+.container {
+  max-width: 720px;
+  width: 100%;
+  padding: 56px 36px 48px;
+  text-align: left;
+}
+
+/* ---------- Header ---------- */
+header {
+  margin-bottom: 26px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.ident { min-width: 0; }
+/* Lifted above the name's line box. Centring put its top at roughly the same
+   height as the name's, which read as sitting low next to a two-line block. */
+.mark { display: block; width: 58px; height: 58px; flex: 0 0 auto; margin-top: -6px; }
+
+.name {
+  font-size: var(--name-size);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: .2px;
+  margin-bottom: 3px;
+}
+
+.email { font-size: .86em; color: var(--text-secondary); }
+.email .dot { font-size: .82em; font-style: italic; }
+
+/* ---------- About ---------- */
+.about { margin-bottom: 32px; max-width: 660px; }
+.about p { color: var(--text-secondary); font-size: .95em; }
+.about a { color: var(--link); text-decoration: none; transition: color .2s ease; }
+.about a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---------- Sections ---------- */
+.content { display: flex; flex-direction: column; gap: 30px; }
+.section-group h2 { font-size: 1.1em; font-weight: 700; margin-bottom: 11px; }
+
+/* ---------- Publications ---------- */
+.publications { counter-reset: pub-counter; list-style: none; }
+.publications li {
+  counter-increment: pub-counter;
+  position: relative;
+  padding-left: 28px;
+  margin-bottom: 15px;
+  font-size: .92em;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.publications li:last-child { margin-bottom: 0; }
+.publications li::before {
+  content: counter(pub-counter) ".";
+  position: absolute;
+  left: 0;
+  color: var(--text-secondary);
+  font-size: .85em;
+}
+/* Block layout: title leads, then authors, then venue. Tight inside an entry,
+   looser between entries, so each paper reads as one unit. */
+.publications li > div { line-height: 1.4; }
+.pub-title { color: var(--link); }
+.pub-title a { color: var(--link); }
+.pub-authors { color: var(--text-secondary); }
+.pub-venue { color: var(--text-secondary); font-size: .95em; }
+/* Hybrid layout: authors and venue share the second line onward. */
+.pub-rest { color: var(--text-secondary); }
+
+.publications strong { color: var(--text); font-weight: 700; }
+.publications em { font-style: italic; color: var(--text); }
+/* Unlinked titles (papers with no URL yet) match the colour of linked ones. */
+.publications .title { color: var(--link); }
+.publications a { color: var(--link); text-decoration: none; transition: color .2s ease; }
+.publications a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.publications .note { display: inline-block; margin-left: 3px; font-size: .9em; color: var(--accent); }
+/* Equal-contribution note, sits on its own line under the entry it applies to. */
+.publications .eq { display: block; font-size: .86em; color: var(--text-secondary); line-height: 1.4; }
+
+.footnote { margin-top: 12px; font-size: .82em; color: var(--text-secondary); }
+
+/* ---------- Talks ---------- */
+/* No numbering, so the section reads as a different kind of list from the papers. */
+.talks { list-style: none; }
+.talks li {
+  margin-bottom: 13px;
+  font-size: .92em;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.talks li:last-child { margin-bottom: 0; }
+.talks .title { color: var(--link); }
+.talk-title { color: var(--link); line-height: 1.4; }
+.talk-venue { color: var(--text-secondary); font-size: .95em; line-height: 1.4; }
+
+/* ---------- Variant switcher (set SHOW_SWITCHER = False in build.py to remove) ---------- */
+.switcher {
+  margin-top: 36px;
+  padding-top: 12px;
+  border-top: 1px solid #d9d9dd;
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  font-size: .78em;
+  color: #6b6c71;
+}
+.switcher a { color: var(--text-secondary); text-decoration: none; }
+.switcher a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.switcher a.here { color: var(--accent); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .container { padding: 36px 20px 40px; }
+  .name { font-size: calc(var(--name-size) * .88); }
+  .publications li { padding-left: 24px; }
+}
+@media (max-width: 480px) {
+  body { padding: 8px; }
+  .container { padding: 28px 15px 32px; }
+  .name { font-size: calc(var(--name-size) * .8); }
+  .mark { width: 44px; height: 44px; }
+  header { margin-bottom: 22px; gap: 14px; }
+  .about { margin-bottom: 26px; }
+}

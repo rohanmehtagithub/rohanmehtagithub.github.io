@@ -1,0 +1,9 @@
+# Scratch previews and comparison sheets, not part of the site.
+_*.html
+font-specimen.png
+font-weights.png
+favicon-options.png
+static/favicon-options/
+font-demos/
+# OS noise.
+.DS_Store
