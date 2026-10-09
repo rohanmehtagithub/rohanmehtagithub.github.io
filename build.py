@@ -39,11 +39,6 @@ VARIANTS = {
         (400, "italic", f"{CMU}/cmunbso.otf"),
         (700, "normal", f"{CMU}/cmunbbx.otf"),
         (700, "italic", f"{CMU}/cmunbxo.otf")]),
-    "concrete": ("Concrete", "CMU Concrete", "CMU Concrete Roman", False, [
-        (400, "normal", f"{CMU}/cmunorm.otf"),
-        (400, "italic", f"{CMU}/cmunoti.otf"),
-        (700, "normal", f"{CMU}/cmunobx.otf"),
-        (700, "italic", f"{CMU}/cmunobi.otf")]),
 }
 
 # Per-variant optical tuning. CMU Bright is a sans and runs small, Dunhill's
@@ -53,7 +48,6 @@ VARIANTS = {
 # way to firm it up without jumping a whole step.
 TUNING = {
     "bright":   {"body": "17px",   "name": "32px", "line": "1.44", "stroke": "0"},
-    "concrete": {"body": "17.5px", "name": "32px", "line": "1.44", "stroke": "0.18px"},
 }
 
 NAME  = "Rohan Mehta"

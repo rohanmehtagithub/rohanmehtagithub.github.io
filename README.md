@@ -1,18 +1,10 @@
 # Research website
 
-Static site, no JavaScript and no dependencies to serve. The same page is generated in two
-typefaces so they can be compared side by side.
-
-| Page | Typeface | Fonts |
-|---|---|---|
-| `index.html` | CMU Bright SemiBold (sans) | 135 KB |
-| `concrete.html` | CMU Concrete Roman | 167 KB |
-
-Each page loads only its own fonts, so the byte cost above is per visitor, not cumulative.
+Static site, no JavaScript and no dependencies to serve, set in CMU Bright SemiBold.
 
 ## Editing
 
-Both pages are generated from `build.py`. Do not edit the HTML by hand, it will be overwritten.
+The page is generated from `build.py`. Do not edit the HTML by hand, it will be overwritten.
 Change the content there and regenerate:
 
     python3 build.py
@@ -22,28 +14,20 @@ Inside `build.py`:
 - `PUBS` is the publication list, one tuple per paper: authors, title, link, venue, optional note.
   Numbering is automatic. Bold your own name with `<strong>`.
 - `BIO`, `NAME`, and `EMAIL` are the header and About text.
-- `DEFAULT` picks which typeface is served as `index.html`.
-- `SHOW_SWITCHER` controls the "view in" strip at the bottom. Set it to `False` before deploying.
-- `TUNING` holds per-typeface body size, name size, and line height, since the two fonts do not
-  render at the same optical size.
+- `TUNING` holds body size, name size, and line height.
 
-Dropping a variant from `VARIANTS` also deletes its page on the next run. Only files carrying the
-build.py marker comment are ever removed, so hand-written files in this directory are safe.
-
-Shared layout lives in `style.css`. Each page loads it first, then `static/fonts/<variant>.css`,
+Shared layout lives in `style.css`. The page loads it first, then `static/fonts/bright.css`,
 which sets the font family and the size variables. That order matters: the variant stylesheet has
 to come second so its values win.
 
 ## Fonts
 
-Subset to Latin, Greek, punctuation, and math symbols from the OTF originals in the local TeX Live
-install, then converted to woff2 by `build.py` via `pyftsubset`. Both are OFL-licensed, so shipping
-them is fine. Sources are in `texmf-dist/fonts/opentype/public/cm-unicode`.
+CMU Bright, subset to Latin, Greek, punctuation, and math symbols from the OTF originals in the
+local TeX Live install (`texmf-dist/fonts/opentype/public/cm-unicode`), then converted to woff2 by
+`build.py` via `pyftsubset`. OFL-licensed, so shipping them is fine.
 
-CMU Bright is a light sans by design and its Roman cut reads too thin on a screen. The whole family
-is therefore shifted up one step: SemiBold carries the body text and Bold Extended is the bold.
-If it still reads light, the alternative is New Computer Modern Sans Book, which is a separate
-family in `texmf-dist/fonts/opentype/public/newcomputermodern`.
+CMU Bright is a light sans by design and its Roman cut reads too thin on a screen, so the family is
+shifted up one step: SemiBold carries the body text and Bold Extended is the bold.
 
 Regenerating requires `pyftsubset` (from `fonttools`, with `brotli` installed) and a TeX Live
 install at the path set in `build.py`. The generated woff2 files are committed, so deploying does
@@ -71,7 +55,6 @@ Live at https://rohanmehtagithub.github.io/, served by GitHub Pages from the `ma
 
 Pages rebuilds within a minute or two. `.nojekyll` stops GitHub from running Jekyll over the tree,
 and `.gitignore` keeps the scratch previews and font comparison sheets out of the repository.
-`SHOW_SWITCHER` in `build.py` is off for deployment; turn it on locally to compare typefaces.
 
 ## Icons
 
