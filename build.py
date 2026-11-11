@@ -106,7 +106,7 @@ TALKS = [
  ('Efficient Magic State Generation with Tricycle Codes.',
   'TQC 2026, Sherbrooke, Canada.'),
  ('Single-Shot Magic State Factories for Quantum LDPC Codes.',
-  'PsiQuantum and University of Sydney Fault-Tolerance Seminar. November 1, 2026.'),
+  'PsiQuantum / University of Sydney Fault-Tolerance Seminar. November 1, 2026.'),
 ]
 
 
