@@ -7,7 +7,7 @@ is rewritten from the same source, so the versions can never drift apart.
 Fonts are subset from the local TeX Live OTF originals and written as woff2 into
 static/fonts/<slug>/. All of them are OFL-licensed, so shipping them is fine.
 """
-import hashlib, os, shutil, subprocess, sys
+import datetime, hashlib, html as htmllib, json, os, re, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 TL   = "/usr/local/texlive/2022/texmf-dist/fonts/opentype/public"
@@ -60,8 +60,19 @@ BIO = ('I am a PhD student at Harvard University, where I am advised by '
        'quantum computers. Previously, I completed my undergraduate degree at the University of '
        'Chicago, where I was advised by '
        '<a href="https://pme.uchicago.edu/directory/liang-jiang" target="_blank" rel="noopener">Liang Jiang</a>.')
-DESCRIPTION = ("PhD student at Harvard University working in quantum error correction, "
-               "advised by Mikhail Lukin.")
+# Search-result snippet and link-preview text. Kept under 160 characters so
+# Google shows it whole; it names the field and the group, which is what a
+# search for a common name needs to land here.
+DESCRIPTION = ("Rohan Mehta, PhD student at Harvard University advised by Mikhail Lukin. "
+               "Quantum error correction, quantum LDPC codes, magic state factories, "
+               "fault tolerance.")
+# Browser-tab and search-result title. The heading on the page stays the bare
+# name; the suffix tells a search engine which Rohan Mehta this is.
+PAGE_TITLE = f"{NAME} – Quantum Error Correction, Harvard University"
+SITE_URL = "https://rohanmehtagithub.github.io/"
+# Topics listed in the structured data and on the link-preview card.
+TOPICS = ["Quantum error correction", "Quantum LDPC codes",
+          "Fault-tolerant quantum computation", "Magic state distillation"]
 
 # Publications in CHRONOLOGICAL order, oldest first. The page renders them
 # reversed, so newest appears at the top. Add new papers to the bottom.
@@ -162,8 +173,140 @@ def write_font_css(slug, family, is_sans, made):
     return out
 
 
+def plain(fragment):
+    """Author or venue HTML reduced to text: tags gone, entities decoded."""
+    return htmllib.unescape(re.sub(r"<[^>]+>", "", fragment))
+
+
+def author_names(authors_html):
+    """Full names from an authors fragment, R.M. expanded, asterisks dropped."""
+    text = plain(authors_html).replace("R.M.", NAME)
+    names = [n.replace("*", "").strip() for n in text.split(",")]
+    return [n for n in names if n and n not in ("\u2026", "...")]
+
+
+PERSON_ID = SITE_URL + "#person"
+
+
+def pub_jsonld(authors, title, href, venue, note):
+    """One schema.org ScholarlyArticle for a PUBS entry."""
+    v = plain(venue)
+    item = {"@type": "ScholarlyArticle", "headline": title.rstrip("."),
+            "author": [{"@id": PERSON_ID, "@type": "Person", "name": NAME} if n == NAME
+                       else {"@type": "Person", "name": n} for n in author_names(authors)]}
+    if href:
+        item["url"] = href
+    year = re.search(r"\b(?:19|20)\d{2}\b", v)
+    if year:
+        item["datePublished"] = year.group(0)
+    arxiv = re.search(r"arXiv:(\d{4}\.\d{4,5})", v)
+    if arxiv:
+        item["identifier"] = f"arXiv:{arxiv.group(1)}"
+        item["sameAs"] = f"https://arxiv.org/abs/{arxiv.group(1)}"
+    doi = re.search(r"doi\.org/(.+)$", href or "")
+    if doi:
+        item["identifier"] = f"doi:{doi.group(1)}"
+        item["sameAs"] = href
+    journal = re.search(r"<em>(.*?)</em>", venue)
+    if journal:
+        item["isPartOf"] = {"@type": "Periodical", "name": plain(journal.group(1))}
+    return item
+
+
+def jsonld(og_url):
+    """schema.org graph: the profile page, the person, and every paper. Search
+    engines use it to tell this Rohan Mehta apart from the others and to attach
+    the papers to him. Rendered inside a <script> so '</' must be escaped."""
+    person = {
+        "@type": "Person", "@id": PERSON_ID, "name": NAME,
+        "givenName": "Rohan", "familyName": "Mehta",
+        "url": SITE_URL, "image": og_url, "jobTitle": "PhD student",
+        "description": DESCRIPTION,
+        "affiliation": {"@type": "CollegeOrUniversity", "name": "Harvard University",
+                        "url": "https://www.harvard.edu/"},
+        "alumniOf": {"@type": "CollegeOrUniversity", "name": "University of Chicago",
+                     "url": "https://www.uchicago.edu/"},
+        "knowsAbout": TOPICS,
+    }
+    page = {"@type": "ProfilePage", "@id": SITE_URL, "url": SITE_URL,
+            "name": PAGE_TITLE, "description": DESCRIPTION, "inLanguage": "en",
+            "mainEntity": person}
+    papers = [pub_jsonld(*p[:5]) for p in reversed(PUBS)]
+    graph = {"@context": "https://schema.org", "@graph": [page] + papers}
+    return json.dumps(graph, ensure_ascii=False, indent=2).replace("</", "<\\/")
+
+
+def make_og_image():
+    """1200x630 card shown when the link is pasted into Slack, iMessage, X and
+    the like. Drawn from the same CMU Bright face and the favicon's matrix cells
+    so it matches the page. Output is deterministic, so the committed PNG only
+    changes when this function or the icon does."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        print("  Pillow missing, kept existing og-image.png")
+        return
+    W, H, M = 1200, 630, 96
+    img = Image.new("RGB", (W, H), "#ffffff")
+    d = ImageDraw.Draw(img)
+    face = f"{CMU}/cmunbsr.otf"
+    name_f, sub_f, url_f = (ImageFont.truetype(face, n) for n in (104, 40, 32))
+    # Matrix mark at top right, as in the page header.
+    svg = open(os.path.join(ROOT, "static", "favicon.svg"), encoding="utf-8").read()
+    cells = re.findall(r'<rect x="(\d+)" y="(\d+)" width="10" height="10" fill="(#[0-9a-fA-F]{6})"', svg)
+    # Text block sits a little above centre, URL alone at the bottom.
+    base = 262
+    size = 200
+    sc = size / 64
+    # The mark's top lines up with the cap height of the name (about 0.7 em).
+    x0, y0 = W - M - size + 10 * sc, base - 0.7 * 104 - 10 * sc
+    for x, y, fill in cells:
+        x, y = int(x), int(y)
+        d.rectangle([x0 + x * sc, y0 + y * sc, x0 + (x + 10) * sc - 1, y0 + (y + 10) * sc - 1], fill=fill)
+    d.text((M, base), NAME, font=name_f, fill="#1a1a1d", anchor="ls")
+    d.text((M, base + 78), "PhD student, Harvard University", font=sub_f, fill="#3b3c41", anchor="ls")
+    topics = "Quantum error correction  \u00b7  quantum LDPC codes  \u00b7  fault tolerance"
+    # Shrink the topics line until it fits inside the margins.
+    tf, n = sub_f, 40
+    while d.textlength(topics, font=tf) > W - 2 * M and n > 24:
+        n -= 1
+        tf = ImageFont.truetype(face, n)
+    d.text((M, base + 136), topics, font=tf, fill="#3b3c41", anchor="ls")
+    d.text((M, H - M), SITE_URL.replace("https://", "").rstrip("/"), font=url_f,
+           fill="#0f4a6e", anchor="ls")
+    out = os.path.join(ROOT, "static", "og-image.png")
+    img.save(out, optimize=True)
+    return out
+
+
+def write_seo_files(page_html):
+    """robots.txt and a one-URL sitemap. lastmod moves to today only when the
+    rendered page differs from the one on disk, so an unchanged rebuild does not
+    pretend the page is new."""
+    open(os.path.join(ROOT, "robots.txt"), "w").write(
+        f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}sitemap.xml\n")
+    index = os.path.join(ROOT, "index.html")
+    old = open(index, encoding="utf-8").read() if os.path.exists(index) else ""
+    sm = os.path.join(ROOT, "sitemap.xml")
+    prev = None
+    if os.path.exists(sm):
+        prev = re.search(r"<lastmod>(\d{4}-\d{2}-\d{2})</lastmod>", open(sm).read())
+    lastmod = (prev.group(1) if prev and old == page_html
+               else datetime.date.today().isoformat())
+    open(sm, "w").write(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f'  <url>\n    <loc>{SITE_URL}</loc>\n    <lastmod>{lastmod}</lastmod>\n  </url>\n'
+        '</urlset>\n')
+
+
 def render_page(slug, css_v, font_css_v):
     icon_v = vhash(os.path.join(ROOT, "static", "favicon.svg"))
+    og_path = os.path.join(ROOT, "static", "og-image.png")
+    og_url = f"{SITE_URL}static/og-image.png?v={vhash(og_path)}"
+    desc = htmllib.escape(DESCRIPTION, quote=True)
+    ptitle = htmllib.escape(PAGE_TITLE, quote=True)
+    ld = jsonld(og_url)
     label, family, title_suffix, is_sans, faces = VARIANTS[slug]
     pubs = []
     for authors, title, href, venue, note, *rest in reversed(PUBS):
@@ -215,7 +358,7 @@ def render_page(slug, css_v, font_css_v):
             f'            {v}\n          </li>'
             for t, v in reversed(TALKS))
     talks_section = ("" if not TALKS else
-        '\n      <div class="section-group">\n'
+        '\n      <div class="section-group" id="talks">\n'
         '        <h2>Selected talks</h2>\n'
         '        <ul class="talks">\n' + talks + '\n        </ul>\n'
         '      </div>')
@@ -238,8 +381,29 @@ def render_page(slug, css_v, font_css_v):
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light only">
-  <title>{NAME}</title>
-  <meta name="description" content="{DESCRIPTION}">
+  <title>{ptitle}</title>
+  <meta name="description" content="{desc}">
+  <meta name="author" content="{NAME}">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="canonical" href="{SITE_URL}">
+  <meta property="og:type" content="profile">
+  <meta property="profile:first_name" content="Rohan">
+  <meta property="profile:last_name" content="Mehta">
+  <meta property="og:title" content="{ptitle}">
+  <meta property="og:description" content="{desc}">
+  <meta property="og:url" content="{SITE_URL}">
+  <meta property="og:site_name" content="{NAME}">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="{og_url}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{NAME}, quantum error correction, Harvard University">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{ptitle}">
+  <meta name="twitter:description" content="{desc}">
+  <meta name="twitter:image" content="{og_url}">
   <link rel="icon" href="favicon.ico?v={icon_v}" sizes="any">
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg?v={icon_v}">
   <link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32.png?v={icon_v}">
@@ -252,6 +416,9 @@ def render_page(slug, css_v, font_css_v):
   <!-- Uncomment to render LaTeX in titles:
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   -->
+  <script type="application/ld+json">
+{ld}
+  </script>
 </head>
 <body>
   <div class="container">
@@ -265,12 +432,13 @@ def render_page(slug, css_v, font_css_v):
            alt="Sparse parity-check matrix" width="64" height="64">
     </header>
 
+    <main>
     <section class="about">
       <p>{BIO}</p>
     </section>
 
     <section class="content">
-      <div class="section-group">
+      <div class="section-group" id="publications">
         <h2>Publications</h2>
         <ol class="publications">
 {pubs}
@@ -279,6 +447,7 @@ def render_page(slug, css_v, font_css_v):
       </div>
 {talks_section}
     </section>
+    </main>
 {switcher}
   </div>
 </body>
@@ -310,13 +479,16 @@ def main():
             shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
             print(f"  removed stale {entry}")
 
+    make_og_image()
     for slug, (label, family, title_suffix, is_sans, faces) in VARIANTS.items():
         made = subset_fonts(slug, faces)
         write_font_css(slug, family, is_sans, made)
         page = "index.html" if slug == DEFAULT else f"{slug}.html"
-        open(os.path.join(ROOT, page), "w").write(
-            render_page(slug, vhash(os.path.join(ROOT, "style.css")),
-                        vhash(os.path.join(ROOT, "static", "fonts", f"{slug}.css"))))
+        html = render_page(slug, vhash(os.path.join(ROOT, "style.css")),
+                           vhash(os.path.join(ROOT, "static", "fonts", f"{slug}.css")))
+        if slug == DEFAULT:
+            write_seo_files(html)
+        open(os.path.join(ROOT, page), "w").write(html)
         kb = sum(os.path.getsize(p) for _w, _s, p in made) / 1024
         bold = "synthesised bold" if not any(w == 700 for w, _s, _p in faces) else "4 faces"
         print(f"  {page:<18} {title_suffix:<28} {kb:6.0f} KB  ({bold})")

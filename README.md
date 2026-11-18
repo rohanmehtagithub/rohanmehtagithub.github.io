@@ -56,6 +56,28 @@ Live at https://rohanmehtagithub.github.io/, served by GitHub Pages from the `ma
 Pages rebuilds within a minute or two. `.nojekyll` stops GitHub from running Jekyll over the tree,
 and `.gitignore` keeps the scratch previews and font comparison sheets out of the repository.
 
+## Search engines and link previews
+
+`build.py` also writes what crawlers and chat apps look for, so none of it is hand-edited:
+
+- `<title>` and the meta description name the field and the group, which is what separates this
+  page from the other Rohan Mehtas. `PAGE_TITLE` and `DESCRIPTION` set them; keep the description
+  under 160 characters so Google shows it whole.
+- A canonical link, Open Graph and Twitter card tags, and `static/og-image.png`, the 1200 by 630
+  card shown when the URL is pasted into Slack, iMessage or X. The card is drawn by `make_og_image`
+  from the same CMU Bright face and the favicon's cells, and is deterministic, so it only changes
+  when the icon or that function does.
+- A schema.org JSON-LD block: the page as a `ProfilePage`, you as a `Person` with affiliation and
+  topics (`TOPICS`), and one `ScholarlyArticle` per entry in `PUBS` with full author names, year,
+  arXiv or DOI identifier and journal. Papers are read straight from `PUBS`, so a new paper needs
+  nothing extra.
+- `robots.txt` and `sitemap.xml`. The sitemap's `lastmod` moves to today only when the rendered
+  page differs from the one on disk.
+
+Indexing itself is up to the crawlers. Submitting the sitemap once in Google Search Console
+(https://search.google.com/search-console, verify by the HTML-tag method and paste the tag into
+`build.py`'s head) gets the first crawl within days rather than weeks.
+
 ## Icons
 
 `static/favicon.svg` is a 4x4 sparse parity-check matrix, dark cells against the page background.
