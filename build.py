@@ -110,14 +110,14 @@ PUBS = [
 
 
 # Talks in CHRONOLOGICAL order, oldest first, like PUBS. The page reverses them.
-# Each entry: (title, venue_html)
+# Each entry: (title, venue_html, optional note such as '[Invited]')
 TALKS = [
  ('Dynamically Generated Logical Gates.',
-  'QI Group Meeting, MIT. January 2025.'),
+  'QI Group Meeting, MIT. January 2025.', '[Invited]'),
  ('Efficient Magic State Generation with Tricycle Codes.',
   'TQC 2026, Sherbrooke, Canada.'),
  ('Single-Shot Magic State Factories for Quantum LDPC Codes.',
-  'PsiQuantum / University of Sydney Fault-Tolerance Seminar. November 1, 2026.'),
+  'PsiQuantum / University of Sydney Fault-Tolerance Seminar. November 1, 2026.', '[Invited]'),
 ]
 
 
@@ -347,16 +347,18 @@ def render_page(slug, css_v, font_css_v):
 
     footnote = ""
 
+    def talk_note(rest):
+        return f' <span class="note">{rest[0]}</span>' if rest and rest[0] else ""
     if LAYOUT in ("block", "hybrid"):
         talks = "\n".join(
             f'          <li>\n            <div class="talk-title">{t.rstrip(".")}</div>\n'
-            f'            <div class="talk-venue">{v}</div>\n          </li>'
-            for t, v in reversed(TALKS))
+            f'            <div class="talk-venue">{v}{talk_note(rest)}</div>\n          </li>'
+            for t, v, *rest in reversed(TALKS))
     else:
         talks = "\n".join(
             f'          <li>\n            &ldquo;<span class="title">{t}</span>&rdquo;\n'
-            f'            {v}\n          </li>'
-            for t, v in reversed(TALKS))
+            f'            {v}{talk_note(rest)}\n          </li>'
+            for t, v, *rest in reversed(TALKS))
     talks_section = ("" if not TALKS else
         '\n      <div class="section-group" id="talks">\n'
         '        <h2>Selected talks</h2>\n'

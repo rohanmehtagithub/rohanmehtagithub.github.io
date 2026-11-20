@@ -113,7 +113,7 @@ header {
 .publications .title { color: var(--link); }
 .publications a { color: var(--link); text-decoration: none; transition: color .2s ease; }
 .publications a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-.publications .note { display: inline-block; margin-left: 3px; font-size: .9em; color: var(--accent); }
+.publications .note, .talks .note { display: inline-block; margin-left: 3px; font-size: .9em; color: var(--accent); }
 /* Equal-contribution note, sits on its own line under the entry it applies to. */
 .publications .eq { display: block; font-size: .86em; color: var(--text-secondary); line-height: 1.4; }
 
